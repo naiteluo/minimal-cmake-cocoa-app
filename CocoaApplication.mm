@@ -3,6 +3,11 @@
 #import "WindowDelegate.h"
 #import "CustomizedView.h"
 
+static const CGFloat InitX = 300;
+static const CGFloat InitY = 300;
+static const CGFloat Width = 300;
+static const CGFloat Height = 300;
+
 int main(int argc, const char *argv[]) {
     int result = 0;
 
@@ -31,8 +36,8 @@ int main(int argc, const char *argv[]) {
                       NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
 
     NSWindow *m_pWindow = [[NSWindow alloc]
-            initWithContentRect:CGRectMake(0, 0, 600,
-                                           600) styleMask:style backing:NSBackingStoreBuffered defer:NO];
+            initWithContentRect:CGRectMake(InitX, InitY, Width,
+                                           Height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
     [m_pWindow setTitle:appName];
     [m_pWindow makeKeyAndOrderFront:nil];
     id winDelegate = [WindowDelegate new];
@@ -40,7 +45,12 @@ int main(int argc, const char *argv[]) {
 
     NSOpenGLPixelFormatAttribute attrs[] = {
             NSOpenGLPFAAccelerated,
+            // OpenGL version matters
+            // Legacy version is 2.1, some modern API maybe be unavailable.
+            // In the meantime, some old & simple demo api like glBegin glColor3f is unavailable in high opengl version.
+            // You might get `1282` error when you try to run old API in modern version of OpenGL.
             NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+//            NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
             NSOpenGLPFAColorSize, 32,
             NSOpenGLPFADepthSize, 24,
             NSOpenGLPFAStencilSize, 8,
@@ -52,22 +62,23 @@ int main(int argc, const char *argv[]) {
             0
     };
 
-    NSLog(@"Before GLView *pGLView = [GLView new];");
+    NSLog(@"Create CustomizedView");
     CustomizedView *pGLView = [CustomizedView new];
-    NSLog(@"After GLView *pGLView = [GLView new];");
+    NSLog(@"Init NSOpenGLPixelFormat");
     pGLView.pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-    NSLog(@"CocoaOpenGLApplication::Initialize");
     if ([pGLView pixelFormat] == nil) {
         NSLog(@"No valid matching OpenGL Pixel Format found");
         [pGLView release];
         return -1;
     }
 
-    NSLog(@"pGLView initWithFrame:CGRectMake");
-    [pGLView initWithFrame:CGRectMake(0, 0, 600, 600)];
+    NSLog(@"Init pGLView initWithFrame");
+    [pGLView initWithFrame:CGRectMake(0, 0, Width, Height)];
 
+    NSLog(@"Set window content view ad pGLView");
     [m_pWindow setContentView:pGLView];
 
+    NSLog(@"Main Loop start");
     while (true) {
         NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
                                             untilDate:nil

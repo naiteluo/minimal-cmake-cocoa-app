@@ -1,70 +1,75 @@
 #import "CustomizedView.h"
-#import <OpenGL/gl.h>
+#import "GraphicsManager.h"
+
+namespace Gm {
+    Gm::GraphicsManager *g_pGraphicsManager = reinterpret_cast<Gm::GraphicsManager *>(new Gm::GraphicsManager);
+}
 
 @implementation CustomizedView
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [super drawRect:dirtyRect];
-
+    // TODO: lockFocus
+    if (_openGLContext.view != self) {
+        [_openGLContext setView:self];
+        Gm::g_pGraphicsManager->Initialize();
+    }
     [_openGLContext makeCurrentContext];
 
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glColor3f(1.0f, 0.85f, 0.35f);
-    glBegin(GL_TRIANGLES);
-    {
-        glVertex3f(0.0, 0.6, 0.0);
-        glVertex3f(-0.2, -0.3, 0.0);
-        glVertex3f(0.2, -0.3, 0.0);
-    }
-    glEnd();
-    glFlush();
+    Gm::g_pGraphicsManager->Clear();
+    Gm::g_pGraphicsManager->Draw();
 
     [_openGLContext flushBuffer];
 }
 
+- (void)mouseDown:(NSEvent *)event {
+    [self drawRect:[self frame]];
+}
+
 - (instancetype)initWithFrame:(NSRect)frameRect {
-    NSLog(@"initWithFrame 0");
+    // TODO this method had been called twice?
     self = [super initWithFrame:frameRect];
-
+    // create NSOpenGLContext
+    NSLog(@"Create NSOpenGLContext");
     _openGLContext = [[NSOpenGLContext alloc] initWithFormat:_pixelFormat shareContext:nil];
-
     [_openGLContext makeCurrentContext];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(_surfaceNeedsUpdate:)
-                                                 name:NSViewGlobalFrameDidChangeNotification
-                                               object:self];
-
-    [_openGLContext setView:self];
-    NSLog(@"initWithFrame 1");
+    if (self != nil) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(_surfaceNeedsUpdate:)
+                                                     name:NSViewGlobalFrameDidChangeNotification
+                                                   object:self];
+    }
     return self;
 }
 
-- (void)lockFocus {
-    NSLog(@"lockFocus");
-    [super lockFocus];
-    if ([_openGLContext view] != self) {
-        [_openGLContext setView:self];
-    }
-    [_openGLContext makeCurrentContext];
+- (void)_surfaceNeedsUpdate:(NSNotification *)notification {
+    [self update];
+}
 
+- (void)lockFocus {
+    NSOpenGLContext *context = _openGLContext;
+
+    [super lockFocus];
+    if ([context view] != self) {
+        [context setView:self];
+    }
+    [context makeCurrentContext];
 }
 
 - (void)update {
     [_openGLContext update];
 }
 
-- (void)_surfaceNeedsUpdate:(NSNotification *)notification {
-    [self update];
-
-}
-
 - (void)dealloc {
     [_pixelFormat release];
     [_openGLContext release];
-
+    Gm::g_pGraphicsManager->Finalize();
     [super dealloc];
+}
+
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if ([self window] == nil)
+        [_openGLContext clearDrawable];
 }
 
 @end
