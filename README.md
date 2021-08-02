@@ -25,7 +25,9 @@ cmake --build . --config debug
 ./Debug/CocoaApp.app/Contents/MacOS/CocoaApp 
 ```
 
+Result:
 
+![img.png](img.png)
 
 ## Project Structure
 
