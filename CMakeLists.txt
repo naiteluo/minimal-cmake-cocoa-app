@@ -17,6 +17,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O4 -DNDEBUG")
 
 project(CocoaApp)
 
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
 # fine cocoa and opengl
 find_library(COCOA_LIBRARY Cocoa required)
 find_library(OPENGL_LIBRARY OpenGL required)
@@ -32,4 +34,4 @@ add_executable(CocoaApp
         )
 
 target_include_directories(CocoaApp PRIVATE External/GL/include)
-target_link_libraries(CocoaApp ${COCOA_LIBRARY} ${OPENGL_LIBRARY})
+target_link_libraries(CocoaApp ${COCOA_LIBRARY} ${OPENGL_LIBRARY} Eigen3::Eigen)
