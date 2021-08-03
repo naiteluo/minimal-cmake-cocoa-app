@@ -94,7 +94,8 @@ int Gm::GraphicsManager::Initialize() {
             // Set the depth buffer to be entirely cleared to 1.0 values.
             glClearDepth(1.0f);
             // Enable depth testing.
-//            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_DEPTH_TEST);
+//            glDepthFunc(GL_LESS);
             // Set the polygon winding to front facing for the right handed system.
 //            glFrontFace(GL_CW);
             // Enable back face culling.
@@ -115,7 +116,7 @@ void Gm::GraphicsManager::Clear() {
     // Set the color to clear the screen to.
     glClearColor(0.8f, 0.3f, 0.4f, 1.0f);
     // Clear the screen and depth buffer.
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BITS);
 }
 
 void Gm::GraphicsManager::Draw() {
