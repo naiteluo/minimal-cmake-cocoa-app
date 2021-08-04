@@ -5,8 +5,8 @@
 
 static const CGFloat InitX = 300;
 static const CGFloat InitY = 300;
-static const CGFloat Width = 300;
-static const CGFloat Height = 300;
+static const CGFloat Width = 900;
+static const CGFloat Height = 600;
 
 int main(int argc, const char *argv[]) {
     int result = 0;
@@ -49,7 +49,7 @@ int main(int argc, const char *argv[]) {
             // Legacy version is 2.1, some modern API maybe be unavailable.
             // In the meantime, some old & simple demo api like glBegin glColor3f is unavailable in high opengl version.
             // You might get `1282` error when you try to run old API in modern version of OpenGL.
-            NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+            NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
 //            NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
             NSOpenGLPFAColorSize, 32,
             NSOpenGLPFADepthSize, 24,
