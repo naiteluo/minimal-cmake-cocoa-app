@@ -25,6 +25,10 @@ namespace Gm {
     Gm::g_pGraphicsManager->Reset();
 }
 
+- (void)scrollWheel:(NSEvent *)event {
+    Gm::g_pGraphicsManager->UpdatePositionZ([event scrollingDeltaY]);
+}
+
 - (instancetype)initWithFrame:(NSRect)frameRect {
     // TODO this method had been called twice?
     self = [super initWithFrame:frameRect];

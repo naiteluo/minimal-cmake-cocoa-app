@@ -4,6 +4,9 @@
 #include "Eigen/Core"
 #include "Eigen/Geometry"
 
+#define DEG_TO_RAD M_PI / 180.0f
+#define DEG_RAD_3 DEG_TO_RAD * 3
+
 namespace Gm {
     class GraphicsManager {
     public:
@@ -16,6 +19,8 @@ namespace Gm {
         virtual void Draw();
 
         virtual void Reset();
+
+        virtual void UpdatePositionZ(float z);
 
     private:
         void InitializeBuffers();
@@ -47,6 +52,8 @@ namespace Gm {
 
         float m_positionX = 0, m_positionY = 0, m_positionZ = -10;
         float m_rotationX = 0, m_rotationY = 0, m_rotationZ = 0;
+
+        float m_modelRotationX = 0, m_modelRotationY = 0, m_modelRotationZ = 0;
 
         const float screenDepth = 1000.0f;
         const float screenNear = 0.1f;

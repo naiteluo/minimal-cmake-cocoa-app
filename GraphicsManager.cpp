@@ -376,12 +376,13 @@ void Gm::GraphicsManager::UpdateCameraViewMatrix() {
 
 void Gm::GraphicsManager::UpdateModelMatrix() {
     // Update world matrix to rotate the model
-    rotateAngle += M_PI / 120;
-    Eigen::Matrix4f rotationMatrixY;
-    Eigen::Matrix4f rotationMatrixZ;
+//    m_modelRotationX += DEG_RAD_3;
+    m_modelRotationY += DEG_RAD_3 / 2;
+    m_modelRotationZ += DEG_RAD_3 / 2;
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-    transform.rotate(Eigen::AngleAxisf(rotateAngle, Eigen::Vector3f::UnitZ()));
-    transform.rotate(Eigen::AngleAxisf(rotateAngle, Eigen::Vector3f::UnitY()));
+    transform.rotate(Eigen::AngleAxisf(m_modelRotationZ, Eigen::Vector3f::UnitZ()));
+    transform.rotate(Eigen::AngleAxisf(m_modelRotationY, Eigen::Vector3f::UnitY()));
+//    transform.rotate(Eigen::AngleAxisf(m_modelRotationX, Eigen::Vector3f::UnitX()));
 
     m_worldMatrix = transform * Matrix4f::Identity();
 }
@@ -416,3 +417,12 @@ bool Gm::GraphicsManager::SetShaderParameters(float *worldMatrix, float *viewMat
 void Gm::GraphicsManager::Reset() {
     rotateAngle = 0.0f;
 }
+
+void Gm::GraphicsManager::UpdatePositionZ(float dz) {
+    m_positionZ += dz / 10;
+    if (m_positionZ >= -2) {
+        m_positionZ = -2;
+    }
+}
+
+
