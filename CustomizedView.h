@@ -14,6 +14,10 @@
 
 - (void)mouseDown:(NSEvent *)event;
 
+- (void)mouseDragged:(NSEvent *)event;
+
+- (void)scrollWheel:(NSEvent *)event;
+
 - (void)update;
 
 - (void)dealloc;

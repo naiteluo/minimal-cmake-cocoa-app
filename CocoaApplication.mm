@@ -3,10 +3,10 @@
 #import "WindowDelegate.h"
 #import "CustomizedView.h"
 
-static const CGFloat InitX = 300;
-static const CGFloat InitY = 300;
-static const CGFloat Width = 900;
-static const CGFloat Height = 600;
+static const CGFloat InitX = 960 + 20;
+static const CGFloat InitY = 0;
+static const CGFloat Width = 960;
+static const CGFloat Height = 540;
 
 int main(int argc, const char *argv[]) {
     int result = 0;
@@ -95,6 +95,8 @@ int main(int argc, const char *argv[]) {
         [NSApp sendEvent:event];
         [NSApp updateWindows];
         [event release];
+        // update view
+        [[m_pWindow contentView] setNeedsDisplay:YES];
     }
 
     return result;

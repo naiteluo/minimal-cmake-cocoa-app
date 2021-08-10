@@ -5,30 +5,6 @@
 GLenum glCheckError_(int line) {
     GLenum errorCode = glGetError();
     if (errorCode != GL_NO_ERROR) {
-//        std::string error;
-//        switch (errorCode) {
-//            case GL_INVALID_ENUM:
-//                error = "INVALID_ENUM";
-//                break;
-//            case GL_INVALID_VALUE:
-//                error = "INVALID_VALUE";
-//                break;
-//            case GL_INVALID_OPERATION:
-//                error = "INVALID_OPERATION";
-//                break;
-//            case GL_STACK_OVERFLOW:
-//                error = "STACK_OVERFLOW";
-//                break;
-//            case GL_STACK_UNDERFLOW:
-//                error = "STACK_UNDERFLOW";
-//                break;
-//            case GL_OUT_OF_MEMORY:
-//                error = "OUT_OF_MEMORY";
-//                break;
-//            case GL_INVALID_FRAMEBUFFER_OPERATION:
-//                error = "INVALID_FRAMEBUFFER_OPERATION";
-//                break;
-//        }
         fprintf(stderr, "line: %i, errorCode: %i\n", line, errorCode);
     }
     return errorCode;
@@ -36,27 +12,40 @@ GLenum glCheckError_(int line) {
 
 #define glCheckError() glCheckError_(__LINE__)
 
+using namespace Eigen;
+
 namespace Asset {
+
+    static const float Width = 960;
+    static const float Height = 540;
+
     const char *vertexShaderSource = "#version 330 core\n"
                                      "in vec3 vertexPosition;\n"
                                      "in vec3 vertexColor;\n"
                                      "out vec3 fragmentColor;\n"
+                                     "uniform mat4 worldMatrix;\n"
+                                     "uniform mat4 viewMatrix;\n"
+                                     "uniform mat4 projectionMatrix;\n"
                                      "void main()\n"
                                      "{\n"
-                                     "   gl_Position = vec4(vertexPosition.x, vertexPosition.y, vertexPosition.z, 1.0);\n"
+                                     //                                     "   gl_Position = projectionMatrix * viewMatrix * worldMatrix * vec4(vertexPosition, 1.0f);\n"
+                                     "   gl_Position = worldMatrix * vec4(vertexPosition, 1.0f);\n"
+                                     "   gl_Position = viewMatrix * gl_Position;\n"
+                                     "   gl_Position = projectionMatrix * gl_Position;\n"
                                      "   fragmentColor = vertexColor;\n"
                                      "}\0";
 
     const char *fragmentShaderSource = "#version 330 core\n"
                                        "in vec3 fragmentColor;\n"
-                                       "out vec3 color;\n"
+                                       "out vec4 color;\n"
                                        "void main()\n"
                                        "{\n"
-                                       "   color = fragmentColor;\n"
+                                       "   color = vec4(fragmentColor, 1.0f);\n"
                                        "}\n\0";
 
     // Our vertices. Three consecutive floats give a 3D vertex; Three consecutive vertices give a triangle.
     // A cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
+    // TODO vertex reuse
     static const GLfloat g_vertex_buffer_data[] = {
             -1.0f, -1.0f, -1.0f, // triangle 1 : begin
             -1.0f, -1.0f, 1.0f,
@@ -137,6 +126,47 @@ namespace Asset {
     };
 }
 
+void BuildPerspectiveFovLHMatrix(Matrix4f &matrix, const float fieldOfView, const float screenAspect,
+                                 const float screenNear, const float screenDepth) {
+    matrix << 1.0f / (screenAspect * tanf(fieldOfView * 0.5f)), 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f / tanf(fieldOfView * 0.5f), 0.0f, 0.0f,
+            0.0f, 0.0f, screenDepth / (screenDepth - screenNear), 1.0f,
+            0.0f, 0.0f, (-screenNear * screenDepth) / (screenDepth - screenNear), 0.0f;
+    // eigen matrix are row-based by default
+    // opengl accepts col-based matrix data by default
+    // eigen's matrix had a data method to return col-based data.
+    // the matrix inputs before are col-based (copy from MakiEngine)
+    // so we transpose the data from "col-based" form to "row-based"
+    // so that we can use matrix's data method to pass data to opengl api
+    matrix.transposeInPlace();
+    return;
+}
+
+void BuildViewMatrix(Matrix4f &result, const Vector3f position, const Vector3f lookAt, const Vector3f up) {
+    Vector3f zAxis, xAxis, yAxis;
+    float result1, result2, result3;
+
+    zAxis = lookAt - position;
+    zAxis.normalize();
+
+    xAxis = up.cross(zAxis);
+    xAxis.normalize();
+
+    yAxis = zAxis.cross(xAxis);
+
+    result1 = -(xAxis.dot(position));
+    result2 = -(yAxis.dot(position));
+    result3 = -(zAxis.dot(position));
+
+    result << xAxis[0], yAxis[0], zAxis[0], 0.0f,
+            xAxis[1], yAxis[1], zAxis[1], 0.0f,
+            xAxis[2], yAxis[2], zAxis[2], 0.0f,
+            result1, result2, result3, 1.0f;
+    // see `BuildPerspectiveFovLHMatrix`
+    result.transposeInPlace();
+    return;
+}
+
 bool Gm::GraphicsManager::InitializeProgram() {
     // build and compile our shader program
     // ------------------------------------
@@ -185,6 +215,9 @@ bool Gm::GraphicsManager::InitializeProgram() {
     return true;
 }
 
+/**
+ * create&bind VAP and VBO
+ */
 void Gm::GraphicsManager::InitializeBuffers() {
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -242,24 +275,29 @@ int Gm::GraphicsManager::Initialize() {
         if (GLAD_GL_VERSION_3_0) {
             // Set the depth buffer to be entirely cleared to 1.0 values.
             glClearDepth(1.0f);
+
             // Enable depth testing.
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
-            // Set the polygon winding to front facing for the right handed system.
+
+            // Set the polygon winding to front facing for the right-handed system.
             glFrontFace(GL_CW);
+
             // Enable back face culling.
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
-//            glDebugMessageCallbackARB(MessageCallback, 0);
+
+            // Initialize the model matrix to the identity matrix.
+            m_worldMatrix = Matrix4f::Identity();
+            InitializePerspectiveMatrix();
         }
-        InitializeBuffers();
         result = InitializeProgram();
+        InitializeBuffers();
     }
     return result;
 }
 
 void Gm::GraphicsManager::Finalize() {
-    // TODO properly dispose
     glUseProgram(0);
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -276,11 +314,105 @@ void Gm::GraphicsManager::Clear() {
 }
 
 void Gm::GraphicsManager::Draw() {
+    UpdateModelMatrix();
+    UpdateCameraViewMatrix();
+
     glUseProgram(shaderProgram);
     glCheckError();
+    SetShaderParameters(m_worldMatrix.data(), m_viewMatrix.data(), m_projectionMatrix.data());
     // seeing as we only have a single VAO there's no need to bind it every time,
     // but we'll do so to keep things a bit more organized
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
     glFlush();
+}
+
+void Gm::GraphicsManager::InitializePerspectiveMatrix() {
+    // Set the field of view and screen aspect ratio.
+    float fieldOfView = M_PI / 4.0f;
+    float screenAspect = Asset::Width / Asset::Height;
+
+    BuildPerspectiveFovLHMatrix(m_projectionMatrix, fieldOfView, screenAspect, screenNear, screenDepth);
+}
+
+void Gm::GraphicsManager::UpdateCameraViewMatrix() {
+    Eigen::Vector3f up, position, lookAt;
+    float yaw, pitch, roll;
+    Affine3f rotationMatrix;
+
+    // Setup the vector that points upwards.
+    up[0] = 0.0f;
+    up[1] = 1.0f;
+    up[2] = 0.0f;
+
+    // Setup the position of the camera in the world.
+    position[0] = m_positionX;
+    position[1] = m_positionY;
+    position[2] = m_positionZ;
+
+    // Setup where the camera is looking by default.
+    lookAt[0] = 0.0f;
+    lookAt[1] = 0.0f;
+    lookAt[2] = 1.0f;
+
+    // Set the yaw (Y axis), pitch (X axis), and roll (Z axis) rotations in radians.
+    pitch = m_rotationX * 0.0174532925f;
+    yaw = m_rotationY * 0.0174532925f;
+    roll = m_rotationZ * 0.0174532925f;
+
+    rotationMatrix = AngleAxisf(pitch, Vector3f::UnitX()) * AngleAxisf(yaw, Vector3f::UnitY()) *
+                     AngleAxisf(roll, Vector3f::UnitZ());
+
+    // Transform the lookAt and up vector by the rotation matrix so the view is correctly rotated at the origin.
+    lookAt = rotationMatrix * lookAt;
+    up = rotationMatrix * up;
+
+    // Translate the rotated camera position to the location of the viewer.
+    lookAt = position + lookAt;
+
+    // Finally, create the view matrix from the three updated vectors.
+    BuildViewMatrix(m_viewMatrix, position, lookAt, up);
+}
+
+void Gm::GraphicsManager::UpdateModelMatrix() {
+    // Update world matrix to rotate the model
+    rotateAngle += M_PI / 120;
+    Eigen::Matrix4f rotationMatrixY;
+    Eigen::Matrix4f rotationMatrixZ;
+    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+    transform.rotate(Eigen::AngleAxisf(rotateAngle, Eigen::Vector3f::UnitZ()));
+    transform.rotate(Eigen::AngleAxisf(rotateAngle, Eigen::Vector3f::UnitY()));
+
+    m_worldMatrix = transform * Matrix4f::Identity();
+}
+
+bool Gm::GraphicsManager::SetShaderParameters(float *worldMatrix, float *viewMatrix, float *projectionMatrix) {
+    unsigned int location;
+
+    // Set the world matrix in the vertex shader.
+    location = glGetUniformLocation(shaderProgram, "worldMatrix");
+    if (location == -1) {
+        return false;
+    }
+    glUniformMatrix4fv(location, 1, false, worldMatrix);
+
+    // Set the view matrix in the vertex shader.
+    location = glGetUniformLocation(shaderProgram, "viewMatrix");
+    if (location == -1) {
+        return false;
+    }
+    glUniformMatrix4fv(location, 1, false, viewMatrix);
+
+    // Set the projection matrix in the vertex shader.
+    location = glGetUniformLocation(shaderProgram, "projectionMatrix");
+    if (location == -1) {
+        return false;
+    }
+    glUniformMatrix4fv(location, 1, false, projectionMatrix);
+
+    return true;
+}
+
+void Gm::GraphicsManager::Reset() {
+    rotateAngle = 0.0f;
 }

@@ -22,7 +22,7 @@ namespace Gm {
 }
 
 - (void)mouseDown:(NSEvent *)event {
-    [self drawRect:[self frame]];
+    Gm::g_pGraphicsManager->Reset();
 }
 
 - (instancetype)initWithFrame:(NSRect)frameRect {
