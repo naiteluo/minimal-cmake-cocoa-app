@@ -19,6 +19,11 @@ namespace Asset {
     static const float Width = 960;
     static const float Height = 540;
 
+    static const float MinPositionZ = -50;
+    static const float MaxPositionZ = -4;
+    static const float DefaultPositionZ = -10;
+    static const float DefaultRotationAngle = 45;
+
     const char *vertexShaderSource = "#version 330 core\n"
                                      "in vec3 vertexPosition;\n"
                                      "in vec3 vertexColor;\n"
@@ -377,12 +382,13 @@ void Gm::GraphicsManager::UpdateCameraViewMatrix() {
 void Gm::GraphicsManager::UpdateModelMatrix() {
     // Update world matrix to rotate the model
 //    m_modelRotationX += DEG_RAD_3;
-    m_modelRotationY += DEG_RAD_3 / 2;
-    m_modelRotationZ += DEG_RAD_3 / 2;
+//    m_modelRotationY += DEG_RAD_3 / 2;
+//    m_modelRotationZ += DEG_RAD_3 / 2;
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-    transform.rotate(Eigen::AngleAxisf(m_modelRotationZ, Eigen::Vector3f::UnitZ()));
-    transform.rotate(Eigen::AngleAxisf(m_modelRotationY, Eigen::Vector3f::UnitY()));
-//    transform.rotate(Eigen::AngleAxisf(m_modelRotationX, Eigen::Vector3f::UnitX()));
+    transform.rotate(Eigen::AngleAxisf(m_modelRotationX * DEG_TO_RAD, Eigen::Vector3f::UnitX()));
+    transform.rotate(Eigen::AngleAxisf(m_modelRotationY * DEG_TO_RAD, Eigen::Vector3f::UnitY()));
+    transform.rotate(Eigen::AngleAxisf(m_modelRotationZ * DEG_TO_RAD, Eigen::Vector3f::UnitZ()));
+
 
     m_worldMatrix = transform * Matrix4f::Identity();
 }
@@ -415,14 +421,26 @@ bool Gm::GraphicsManager::SetShaderParameters(float *worldMatrix, float *viewMat
 }
 
 void Gm::GraphicsManager::Reset() {
-    rotateAngle = 0.0f;
+    m_positionZ = Asset::DefaultPositionZ;
+    m_modelRotationX = Asset::DefaultRotationAngle;
+    m_modelRotationY = Asset::DefaultRotationAngle;
+    m_modelRotationZ = 0.0f;
 }
 
-void Gm::GraphicsManager::UpdatePositionZ(float dz) {
-    m_positionZ += dz / 10;
-    if (m_positionZ >= -2) {
-        m_positionZ = -2;
+void Gm::GraphicsManager::UpdateCameraPositionZ(float dz) {
+    m_positionZ += dz;
+    if (m_positionZ >= Asset::MaxPositionZ) {
+        m_positionZ = Asset::MaxPositionZ;
+    }
+    if (m_positionZ <= Asset::MinPositionZ) {
+        m_positionZ = Asset::MinPositionZ;
     }
 }
+
+void Gm::GraphicsManager::UpdateCameraRotationXY(float drx, float dry) {
+    m_modelRotationX += drx;
+    m_modelRotationY += dry;
+}
+
 
 

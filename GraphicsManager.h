@@ -20,7 +20,9 @@ namespace Gm {
 
         virtual void Reset();
 
-        virtual void UpdatePositionZ(float z);
+        virtual void UpdateCameraPositionZ(float z);
+
+        virtual void UpdateCameraRotationXY(float drx, float dry);
 
     private:
         void InitializeBuffers();
@@ -53,7 +55,7 @@ namespace Gm {
         float m_positionX = 0, m_positionY = 0, m_positionZ = -10;
         float m_rotationX = 0, m_rotationY = 0, m_rotationZ = 0;
 
-        float m_modelRotationX = 0, m_modelRotationY = 0, m_modelRotationZ = 0;
+        float m_modelRotationX = 45, m_modelRotationY = 45, m_modelRotationZ = 0;
 
         const float screenDepth = 1000.0f;
         const float screenNear = 0.1f;

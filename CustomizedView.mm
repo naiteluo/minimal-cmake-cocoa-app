@@ -22,11 +22,17 @@ namespace Gm {
 }
 
 - (void)mouseDown:(NSEvent *)event {
-    Gm::g_pGraphicsManager->Reset();
+    if ([event clickCount] == 2) {
+        Gm::g_pGraphicsManager->Reset();
+    }
 }
 
 - (void)scrollWheel:(NSEvent *)event {
-    Gm::g_pGraphicsManager->UpdatePositionZ([event scrollingDeltaY]);
+    Gm::g_pGraphicsManager->UpdateCameraPositionZ([event scrollingDeltaY] / 10);
+}
+
+- (void)mouseDragged:(NSEvent *)event {
+    Gm::g_pGraphicsManager->UpdateCameraRotationXY(-[event deltaY], -[event deltaX]);
 }
 
 - (instancetype)initWithFrame:(NSRect)frameRect {
