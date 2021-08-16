@@ -27,6 +27,8 @@ cmake --build . --config debug
 
 Result:
 
+Scroll to zoom, drag to rotate.
+
 ![img.png](img.png)
 
 ## Project Structure
